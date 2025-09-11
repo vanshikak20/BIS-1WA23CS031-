@@ -1,0 +1,100 @@
+import random
+
+# Define the function to optimize: y = -x^2 + 5x + 20
+def objective_function(x):
+    return -x**2 + 5*x + 20
+
+class Particle:
+    def __init__(self, position_bounds, velocity_bounds):
+        self.position = random.uniform(position_bounds[0], position_bounds[1])
+        self.velocity = random.uniform(velocity_bounds[0], velocity_bounds[1])
+        self.best_position = self.position
+        self.best_fitness = objective_function(self.position)
+
+    def update_velocity(self, global_best_position, w, c1, c2):
+        r1 = random.random()
+        r2 = random.random()
+        inertia = w * self.velocity
+        personal_influence = c1 * r1 * (self.best_position - self.position)
+        social_influence = c2 * r2 * (global_best_position - self.position)
+
+        self.velocity = inertia + personal_influence + social_influence
+
+    def update_position(self, position_bounds):
+        self.position += self.velocity
+        # Clamp to bounds
+        if self.position < position_bounds[0]:
+            self.position = position_bounds[0]
+        elif self.position > position_bounds[1]:
+            self.position = position_bounds[1]
+
+def get_float(prompt, default=None):
+    while True:
+        try:
+            inp = input(prompt)
+            if inp == "" and default is not None:
+                return default
+            value = float(inp)
+            return value
+        except ValueError:
+            print("Please enter a valid number.")
+
+def get_positive_int(prompt, default=None):
+    while True:
+        try:
+            inp = input(prompt)
+            if inp == "" and default is not None:
+                return default
+            value = int(inp)
+            if value > 0:
+                return value
+            else:
+                print("Please enter a positive integer.")
+        except ValueError:
+            print("Please enter a valid integer.")
+
+def main():
+    print("Particle Swarm Optimization for function: y = -x^2 + 5x + 20")
+   
+    # User inputs
+    position_min = get_float("Enter minimum position boundary (default 0): ", 0)
+    position_max = get_float("Enter maximum position boundary (default 5): ", 5)
+    velocity_min = get_float("Enter minimum velocity (default -1): ", -1)
+    velocity_max = get_float("Enter maximum velocity (default 1): ", 1)
+   
+    num_particles = get_positive_int("Enter number of particles (default 30): ", 30)
+    num_iterations = get_positive_int("Enter number of iterations (default 100): ", 100)
+   
+    w = get_float("Enter inertia weight w (default 0.5): ", 0.5)
+    c1 = get_float("Enter cognitive coefficient c1 (default 1.5): ", 1.5)
+    c2 = get_float("Enter social coefficient c2 (default 1.5): ", 1.5)
+
+    # Initialize swarm
+    swarm = [Particle((position_min, position_max), (velocity_min, velocity_max)) for _ in range(num_particles)]
+   
+    global_best_particle = max(swarm, key=lambda p: p.best_fitness)
+    global_best_position = global_best_particle.best_position
+    global_best_fitness = global_best_particle.best_fitness
+
+    # PSO loop
+    for iteration in range(num_iterations):
+        for particle in swarm:
+            fitness = objective_function(particle.position)
+
+            if fitness > particle.best_fitness:
+                particle.best_fitness = fitness
+                particle.best_position = particle.position
+
+            if fitness > global_best_fitness:
+                global_best_fitness = fitness
+                global_best_position = particle.position
+
+        for particle in swarm:
+            particle.update_velocity(global_best_position, w, c1, c2)
+            particle.update_position((position_min, position_max))
+
+    print(f"\nBest position found: {global_best_position}")
+    print(f"Best fitness (maximized): {global_best_fitness}")
+
+if __name__ == "__main__":
+    main()
