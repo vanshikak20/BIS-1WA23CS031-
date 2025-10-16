@@ -1,0 +1,94 @@
+import numpy as np
+import random
+
+def distance_matrix(coords):
+    n = len(coords)
+    dist = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            dist[i][j] = np.linalg.norm(np.array(coords[i]) - np.array(coords[j]))
+    return dist
+
+def select_next_city(current_city, unvisited, pheromone, heuristic, alpha, beta):
+    pheromone_power = pheromone[current_city][unvisited] ** alpha
+    heuristic_power = heuristic[current_city][unvisited] ** beta
+    prob = pheromone_power * heuristic_power
+    prob_sum = np.sum(prob)
+    if prob_sum == 0:
+        return random.choice(unvisited)
+    prob = prob / prob_sum
+    return np.random.choice(unvisited, p=prob)
+
+def calculate_tour_length(tour, dist):
+    length = 0
+    for i in range(len(tour)-1):
+        length += dist[tour[i]][tour[i+1]]
+    length += dist[tour[-1]][tour[0]]
+    return length
+
+def ant_colony_optimization_tsp(coords, num_ants, iterations, alpha, beta, rho, tau0):
+    n = len(coords)
+    dist = distance_matrix(coords)
+    heuristic = 1 / (dist + np.eye(n))
+    
+    pheromone = np.ones((n, n)) * tau0
+
+    best_tour = None
+    best_length = float('inf')
+
+    for it in range(iterations):
+        all_tours = []
+        all_lengths = []
+
+        for _ in range(num_ants):
+            unvisited = list(range(n))
+            tour = []
+
+            # Random start city
+            current_city = random.choice(unvisited)
+            tour.append(current_city)
+            unvisited.remove(current_city)
+
+            while unvisited:
+                next_city = select_next_city(current_city, unvisited, pheromone, heuristic, alpha, beta)
+                tour.append(next_city)
+                unvisited.remove(next_city)
+                current_city = next_city
+
+            length = calculate_tour_length(tour, dist)
+            all_tours.append(tour)
+            all_lengths.append(length)
+
+            if length < best_length:
+                best_length = length
+                best_tour = tour
+        pheromone *= (1 - rho)
+        delta = 1.0 / best_length
+        for i in range(n):
+            from_city = best_tour[i]
+            to_city = best_tour[(i+1) % n]
+            pheromone[from_city][to_city] += delta / 2
+            pheromone[to_city][from_city] += delta / 2  # symmetric update
+
+        print(f"Iteration {it+1}/{iterations} - Best length so far: {best_length:.4f}")
+
+    return best_tour, best_length
+    
+num_cities = int(input("Enter number of cities: "))
+coords = []
+print("Enter coordinates of each city (e.g. 'x y'):")
+for i in range(num_cities):
+    x, y = map(float, input(f"City {i+1}: ").split())
+    coords.append((x, y))
+
+num_ants = int(input("Enter number of ants: "))
+iterations = int(input("Enter number of iterations: "))
+alpha = float(input("Enter alpha (pheromone importance): "))
+beta = float(input("Enter beta (heuristic importance): "))
+rho = float(input("Enter rho (pheromone evaporation rate): "))
+tau0 = float(input("Enter initial pheromone value tau0: "))
+
+best_tour, best_length = ant_colony_optimization_tsp(coords, num_ants, iterations, alpha, beta, rho, tau0)
+
+print("\nBest tour found (0-indexed):", best_tour)
+print(f"Best tour length: {best_length:.4f}")
