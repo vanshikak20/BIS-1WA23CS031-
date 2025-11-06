@@ -1,0 +1,90 @@
+import numpy as np
+
+# -------------------------------
+#  Neural Network architecture
+# -------------------------------
+class SimpleNN:
+    def __init__(self, n_input, n_hidden, n_output):
+        self.n_input = n_input
+        self.n_hidden = n_hidden
+        self.n_output = n_output
+        # total parameters = weights + biases
+        self.num_params = (n_input * n_hidden) + n_hidden + (n_hidden * n_output) + n_output
+
+    def forward(self, x, weights):
+        idx = 0
+        W1 = weights[idx : idx + self.n_input * self.n_hidden].reshape(self.n_input, self.n_hidden)
+        idx += self.n_input * self.n_hidden
+        b1 = weights[idx : idx + self.n_hidden]
+        idx += self.n_hidden
+        W2 = weights[idx : idx + self.n_hidden * self.n_output].reshape(self.n_hidden, self.n_output)
+        idx += self.n_hidden * self.n_output
+        b2 = weights[idx : idx + self.n_output]
+
+        h = np.tanh(x @ W1 + b1)
+        y_pred = h @ W2 + b2
+        return y_pred
+
+    def mse(self, x, y, weights):
+        y_pred = self.forward(x, weights)
+        return np.mean((y - y_pred)**2)
+
+# -------------------------------
+# Grey Wolf Optimizer
+# -------------------------------
+def gwo(obj_func, dim, lb, ub, num_wolves=20, max_iter=100):
+    X = np.random.uniform(lb, ub, (num_wolves, dim))
+    fitness = np.array([obj_func(x) for x in X])
+    
+    # initialize leaders
+    idx = np.argsort(fitness)
+    alpha, beta, delta = X[idx[0]], X[idx[1]], X[idx[2]]
+    alpha_score, beta_score, delta_score = fitness[idx[0]], fitness[idx[1]], fitness[idx[2]]
+
+    for t in range(max_iter):
+        a = 2 - 2 * (t / max_iter)
+        for i in range(num_wolves):
+            for leader in [alpha, beta, delta]:
+                r1, r2 = np.random.rand(dim), np.random.rand(dim)
+                A = 2 * a * r1 - a
+                C = 2 * r2
+                D = np.abs(C * leader - X[i])
+                X[i] = leader - A * D
+            X[i] = np.clip(X[i], lb, ub)
+            fitness[i] = obj_func(X[i])
+
+        idx = np.argsort(fitness)
+        alpha, beta, delta = X[idx[0]], X[idx[1]], X[idx[2]]
+        alpha_score, beta_score, delta_score = fitness[idx[0]], fitness[idx[1]], fitness[idx[2]]
+
+    return alpha, alpha_score
+
+# -------------------------------
+# Training data (sin(x) function)
+# -------------------------------
+np.random.seed(42)
+X = np.linspace(-2*np.pi, 2*np.pi, 100).reshape(-1,1)
+Y = np.sin(X)
+Xn = (X - X.mean()) / X.std()  # normalize input
+
+# -------------------------------
+# Define Neural Network
+# -------------------------------
+nn = SimpleNN(n_input=1, n_hidden=5, n_output=1)
+
+def fitness_fn(weights):
+    return nn.mse(Xn, Y, weights)
+
+# -------------------------------
+# Run GWO Optimization
+# -------------------------------
+dim = nn.num_params
+lb, ub = -1, 1
+best_weights, best_error = gwo(fitness_fn, dim, lb, ub, num_wolves=30, max_iter=150)
+
+# -------------------------------
+# Final Output
+# -------------------------------
+print("Grey Wolf Optimizer completed.")
+print("Best MSE found:", best_error)
+print("Sample of best weights:", np.round(best_weights[:10], 4))
