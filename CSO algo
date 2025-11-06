@@ -1,0 +1,68 @@
+import random
+
+# --- Fitness Function for Knapsack ---
+def fitness(solution, weights, values, capacity):
+    total_weight = sum([weights[i] * solution[i] for i in range(len(solution))])
+    total_value = sum([values[i] * solution[i] for i in range(len(solution))])
+    if total_weight > capacity:
+        return 0
+    return total_value
+
+# --- Lévy Flight Inspired Random Change ---
+def levy_flight(solution):
+    new_solution = solution.copy()
+    # Flip a few random bits
+    for i in range(len(solution)):
+        if random.random() < 0.3:  # 30% chance to flip each bit
+            new_solution[i] = 1 - new_solution[i]
+    return new_solution
+
+# --- Main Cuckoo Search Function ---
+def cuckoo_search_knapsack(weights, values, capacity, n_nests=10, pa=0.25, iterations=50):
+    n_items = len(weights)
+    nests = [[random.randint(0, 1) for _ in range(n_items)] for _ in range(n_nests)]
+
+    best_solution = max(nests, key=lambda x: fitness(x, weights, values, capacity))
+    best_value = fitness(best_solution, weights, values, capacity)
+
+    for _ in range(iterations):
+        for i in range(n_nests):
+            new_solution = levy_flight(nests[i])
+            if fitness(new_solution, weights, values, capacity) > fitness(nests[i], weights, values, capacity):
+                nests[i] = new_solution
+
+        # Abandon some nests
+        nests.sort(key=lambda x: fitness(x, weights, values, capacity))
+        num_abandon = int(pa * n_nests)
+        for i in range(num_abandon):
+            nests[i] = [random.randint(0, 1) for _ in range(n_items)]
+
+        current_best = max(nests, key=lambda x: fitness(x, weights, values, capacity))
+        current_value = fitness(current_best, weights, values, capacity)
+
+        if current_value > best_value:
+            best_solution = current_best
+            best_value = current_value
+
+    return best_solution, best_value
+
+
+# --- User Input ---
+print("Enter number of items:")
+n = int(input())
+weights, values = [], []
+
+for i in range(n):
+    print(f"Enter weight and value of item {i+1}:")
+    w, v = map(int, input().split())
+    weights.append(w)
+    values.append(v)
+
+print("Enter knapsack capacity:")
+capacity = int(input())
+
+# Run Cuckoo Search
+best_sol, best_val = cuckoo_search_knapsack(weights, values, capacity)
+
+print("\nBest Solution (0=Not taken, 1=Taken):", best_sol)
+print("Maximum Value Achieved:", best_val)
