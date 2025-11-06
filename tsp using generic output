@@ -1,0 +1,13 @@
+Gen 0: Best route distance = 32.5643
+Gen 20: Best route distance = 27.9117
+Gen 40: Best route distance = 27.9117
+Gen 60: Best route distance = 27.9117
+Gen 80: Best route distance = 27.9117
+Gen 100: Best route distance = 27.9117
+Gen 120: Best route distance = 27.9117
+Gen 140: Best route distance = 27.9117
+Gen 160: Best route distance = 27.9117
+Gen 180: Best route distance = 27.9117
+
+Best route found: [0, 1, 6, 3, 5, 4, 2, 7]
+Shortest distance: 27.9117
