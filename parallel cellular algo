@@ -1,0 +1,65 @@
+import random
+
+# Function to minimize
+def f(x):
+    return x**2 - 4*x + 4   # minimum at x = 2, f(x) = 0
+
+# PCA parameters
+rows, cols = 10, 10        # grid size = 10x10
+xmin, xmax = -10, 10       # search space
+iterations = 50            # number of generations
+alpha = 0.5                # learning rate (how much to move towards best neighbor)
+
+# Define 3x3 neighborhood offsets
+neighbors = [(-1, -1), (-1, 0), (-1, 1),
+             (0, -1),  (0, 0),  (0, 1),
+             (1, -1),  (1, 0),  (1, 1)]
+
+# Step 1: Initialize the grid with random x values
+grid = [[random.uniform(xmin, xmax) for _ in range(cols)] for _ in range(rows)]
+
+# Step 2: Start iterations
+for t in range(iterations):
+    # Evaluate fitness for all cells
+    fitness = [[f(grid[i][j]) for j in range(cols)] for i in range(rows)]
+
+    # Find global best (for tracking)
+    best_value = float('inf')
+    best_x = None
+    for i in range(rows):
+        for j in range(cols):
+            if fitness[i][j] < best_value:
+                best_value = fitness[i][j]
+                best_x = grid[i][j]
+
+    # Step 3: Update grid based on neighborhood
+    next_grid = [[0]*cols for _ in range(rows)]
+    for i in range(rows):
+        for j in range(cols):
+            # Find best neighbor
+            best_neighbor_value = grid[i][j]
+            best_neighbor_fit = fitness[i][j]
+
+            for dr, dc in neighbors:
+                ni = (i + dr) % rows   # wrap around edges
+                nj = (j + dc) % cols
+                if fitness[ni][nj] < best_neighbor_fit:
+                    best_neighbor_fit = fitness[ni][nj]
+                    best_neighbor_value = grid[ni][nj]
+
+            # Move halfway toward best neighbor
+            new_val = grid[i][j] + alpha * (best_neighbor_value - grid[i][j])
+            # Keep within bounds
+            new_val = max(min(new_val, xmax), xmin)
+            next_grid[i][j] = new_val
+
+    grid = next_grid
+
+    # Optional: print progress every few iterations
+    if (t + 1) % 10 == 0 or t == 0:
+        print(f"Iteration {t+1}: Best x = {best_x:.4f}, f(x) = {best_value:.6f}")
+
+# Step 4: Final result
+print("\n Optimization complete!")
+print(f"Best solution found: x = {best_x:.4f}")
+print(f"Minimum value f(x) = {best_value:.6f}")
